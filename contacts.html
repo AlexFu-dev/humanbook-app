@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>人脉列表</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+    .card p {
+      margin: 4px 0;
+    }
+    .delete-btn {
+      background-color: #ff4d4f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📒 人脉列表</h1>
+  <div id="contactList"></div>
+
+  <script>
+    // 替换成你自己的 Supabase URL 和 Key
+    const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function fetchContacts() {
+      const { data, error } = await supabase.from('contacts').select('*').order('id', { ascending: false });
+
+      const list = document.getElementById('contactList');
+      list.innerHTML = '';
+
+      if (error) {
+        list.innerHTML = `<p style="color:red;">❌ 获取失败：${error.message}</p>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        list.innerHTML = '<p>暂无人脉记录</p>';
+        return;
+      }
+
+      data.forEach(contact => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <p><strong>姓名：</strong>${contact.name}</p>
+          <p><strong>公司：</strong>${contact.company}</p>
+          <p><strong>联系方式：</strong>${contact.contact}</p>
+          <p><strong>亲密度：</strong>${contact.intimacy}</p>
+          <p><strong>备注：</strong>${contact.notes}</p>
+          <button class="delete-btn" onclick="deleteContact(${contact.id})">删除</button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function deleteContact(id) {
+      if (!confirm("确定要删除这条人脉吗？")) return;
+
+      const { error } = await supabase.from('contacts').delete().eq('id', id);
+
+      if (error) {
+        alert("❌ 删除失败：" + error.message);
+      } else {
+        alert("✅ 删除成功！");
+        fetchContacts(); // 重新加载列表
+      }
+    }
+
+    fetchContacts(); // 页面加载时立即调用
+  </script>
+</body>
+</html>

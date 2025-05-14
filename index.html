@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>添加人脉</title>
+  <!-- 引入 Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 16px;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>添加人脉</h1>
+
+  <label>姓名</label>
+  <input type="text" id="name"/>
+
+  <label>公司</label>
+  <input type="text" id="company"/>
+
+  <label>联系方式</label>
+  <input type="text" id="contact"/>
+
+  <label>标签（多个用逗号隔开）</label>
+  <input type="text" id="tags"/>
+
+  <label>亲密度（1~10）</label>
+  <input type="range" min="1" max="10" id="intimacy" />
+
+  <label>备注</label>
+  <textarea id="notes"></textarea>
+
+  <button onclick="savePerson()">保存人脉</button>
+
+  <a href="contacts.html">
+    <button style="margin-top:10px;">📋 查看人脉列表</button>
+  </a>
+
+  <div class="result" id="resultBox" style="display:none;"></div>
+
+  <script>
+    // ✅ 替换成你自己的 Supabase URL 和 Key
+    const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function savePerson() {
+      const name = document.getElementById('name').value;
+      const company = document.getElementById('company').value;
+      const contact = document.getElementById('contact').value;
+      const tags = document.getElementById('tags').value;
+      const intimacy = parseInt(document.getElementById('intimacy').value);
+      const notes = document.getElementById('notes').value;
+
+      const { data, error } = await supabase.from('contacts').insert([
+        { name, company, contact, tags, intimacy, notes }
+      ]);
+
+      const resultBox = document.getElementById('resultBox');
+      resultBox.style.display = 'block';
+
+      if (error) {
+        resultBox.innerHTML = `<p style="color:red;">❌ 保存失败：${error.message}</p>`;
+      } else {
+        resultBox.innerHTML = `<p style="color:green;">✅ 已成功保存人脉：${name}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
