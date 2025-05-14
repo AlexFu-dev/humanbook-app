@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>人脉列表（含编辑功能）</title>
+  <title>人脉列表（含编辑 + 搜索）</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -51,24 +51,31 @@
       margin-bottom: 6px;
       padding: 4px;
     }
+    #searchBox {
+      margin-bottom: 20px;
+      padding: 8px;
+      width: 100%;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
-  <a href="add.html">
-  <button class="btn" style="margin-bottom: 10px; background-color:#52c41a; color:white;">
-    ➕ 添加人脉
-  </button>
-  </a>
-  
   <h1>📒 人脉列表</h1>
+
+  <a href="add.html">
+    <button class="btn" style="background-color:#52c41a; color:white;">➕ 添加人脉</button>
+  </a>
+
+  <input id="searchBox" type="text" placeholder="🔍 输入姓名、公司或备注搜索" oninput="filterContacts()" />
+
   <div id="contactList"></div>
 
   <script>
-    // 替换成你的 Supabase URL 和 Key
     const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let allContacts = []; // 保存所有联系人用于搜索
 
     async function fetchContacts() {
       const { data, error } = await supabase.from('contacts').select('*').order('id', { ascending: false });
@@ -80,19 +87,36 @@
         return;
       }
 
-      if (data.length === 0) {
-        list.innerHTML = '<p>暂无人脉记录</p>';
+      allContacts = data;
+      renderContacts(allContacts);
+    }
+
+    function renderContacts(contacts) {
+      const list = document.getElementById('contactList');
+      list.innerHTML = '';
+
+      if (contacts.length === 0) {
+        list.innerHTML = '<p>暂无匹配的人脉记录</p>';
         return;
       }
 
-      data.forEach(contact => {
+      contacts.forEach(contact => {
         const card = document.createElement('div');
         card.className = 'card';
         card.id = `contact-${contact.id}`;
-
         card.innerHTML = renderDisplayMode(contact);
         list.appendChild(card);
       });
+    }
+
+    function filterContacts() {
+      const keyword = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = allContacts.filter(c =>
+        (c.name || "").toLowerCase().includes(keyword) ||
+        (c.company || "").toLowerCase().includes(keyword) ||
+        (c.notes || "").toLowerCase().includes(keyword)
+      );
+      renderContacts(filtered);
     }
 
     function renderDisplayMode(contact) {
@@ -135,7 +159,6 @@
       const contact = card.querySelector("p:nth-child(3)").innerText.replace("联系方式：", "").trim();
       const intimacy = card.querySelector("p:nth-child(4)").innerText.replace("亲密度：", "").trim();
       const notes = card.querySelector("p:nth-child(5)").innerText.replace("备注：", "").trim();
-
       card.innerHTML = renderEditMode({ id, name, company, contact, intimacy, notes });
     }
 
