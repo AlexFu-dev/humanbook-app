@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>人脉列表</title>
+  <title>人脉列表（含编辑功能）</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -23,14 +23,33 @@
     .card p {
       margin: 4px 0;
     }
+    .btn {
+      padding: 6px 12px;
+      margin-right: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .edit-btn {
+      background-color: #1677ff;
+      color: white;
+    }
     .delete-btn {
       background-color: #ff4d4f;
       color: white;
-      border: none;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      margin-top: 8px;
+    }
+    .save-btn {
+      background-color: #52c41a;
+      color: white;
+    }
+    .cancel-btn {
+      background-color: #aaa;
+      color: white;
+    }
+    input, textarea {
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 4px;
     }
   </style>
 </head>
@@ -39,14 +58,14 @@
   <div id="contactList"></div>
 
   <script>
-    // 替换成你自己的 Supabase URL 和 Key
+    // 替换成你的 Supabase URL 和 Key
     const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function fetchContacts() {
       const { data, error } = await supabase.from('contacts').select('*').order('id', { ascending: false });
-
       const list = document.getElementById('contactList');
       list.innerHTML = '';
 
@@ -63,32 +82,95 @@
       data.forEach(contact => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
+        card.id = `contact-${contact.id}`;
+
+        card.innerHTML = renderDisplayMode(contact);
+        list.appendChild(card);
+      });
+    }
+
+    function renderDisplayMode(contact) {
+      return `
+        <div>
           <p><strong>姓名：</strong>${contact.name}</p>
           <p><strong>公司：</strong>${contact.company}</p>
           <p><strong>联系方式：</strong>${contact.contact}</p>
           <p><strong>亲密度：</strong>${contact.intimacy}</p>
           <p><strong>备注：</strong>${contact.notes}</p>
-          <button class="delete-btn" onclick="deleteContact(${contact.id})">删除</button>
-        `;
-        list.appendChild(card);
+          <button class="btn edit-btn" onclick="enterEditMode(${contact.id})">编辑</button>
+          <button class="btn delete-btn" onclick="deleteContact(${contact.id})">删除</button>
+        </div>
+      `;
+    }
+
+    function renderEditMode(contact) {
+      return `
+        <div>
+          <label>姓名</label>
+          <input id="edit-name-${contact.id}" value="${contact.name}" />
+          <label>公司</label>
+          <input id="edit-company-${contact.id}" value="${contact.company}" />
+          <label>联系方式</label>
+          <input id="edit-contact-${contact.id}" value="${contact.contact}" />
+          <label>亲密度</label>
+          <input type="range" min="1" max="10" id="edit-intimacy-${contact.id}" value="${contact.intimacy}" />
+          <label>备注</label>
+          <textarea id="edit-notes-${contact.id}">${contact.notes}</textarea>
+          <button class="btn save-btn" onclick="saveEdit(${contact.id})">保存</button>
+          <button class="btn cancel-btn" onclick="cancelEdit(${contact.id})">取消</button>
+        </div>
+      `;
+    }
+
+    function enterEditMode(id) {
+      const card = document.getElementById(`contact-${id}`);
+      const name = card.querySelector("p:nth-child(1)").innerText.replace("姓名：", "").trim();
+      const company = card.querySelector("p:nth-child(2)").innerText.replace("公司：", "").trim();
+      const contact = card.querySelector("p:nth-child(3)").innerText.replace("联系方式：", "").trim();
+      const intimacy = card.querySelector("p:nth-child(4)").innerText.replace("亲密度：", "").trim();
+      const notes = card.querySelector("p:nth-child(5)").innerText.replace("备注：", "").trim();
+
+      card.innerHTML = renderEditMode({ id, name, company, contact, intimacy, notes });
+    }
+
+    function cancelEdit(id) {
+      supabase.from('contacts').select('*').eq('id', id).single().then(({ data }) => {
+        const card = document.getElementById(`contact-${id}`);
+        card.innerHTML = renderDisplayMode(data);
       });
+    }
+
+    async function saveEdit(id) {
+      const name = document.getElementById(`edit-name-${id}`).value;
+      const company = document.getElementById(`edit-company-${id}`).value;
+      const contact = document.getElementById(`edit-contact-${id}`).value;
+      const intimacy = parseInt(document.getElementById(`edit-intimacy-${id}`).value);
+      const notes = document.getElementById(`edit-notes-${id}`).value;
+
+      const { error } = await supabase.from('contacts').update({
+        name, company, contact, intimacy, notes
+      }).eq('id', id);
+
+      if (error) {
+        alert("❌ 保存失败：" + error.message);
+      } else {
+        alert("✅ 已更新！");
+        fetchContacts();
+      }
     }
 
     async function deleteContact(id) {
       if (!confirm("确定要删除这条人脉吗？")) return;
-
       const { error } = await supabase.from('contacts').delete().eq('id', id);
-
       if (error) {
         alert("❌ 删除失败：" + error.message);
       } else {
         alert("✅ 删除成功！");
-        fetchContacts(); // 重新加载列表
+        fetchContacts();
       }
     }
 
-    fetchContacts(); // 页面加载时立即调用
+    fetchContacts();
   </script>
 </body>
 </html>
