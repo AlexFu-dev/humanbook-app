@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Contact</title>
+  <!-- Import Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 16px;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Add Contact</h1>
+
+  <label>Name</label>
+  <input type="text" id="name"/>
+
+  <label>Company</label>
+  <input type="text" id="company"/>
+
+  <label>Contact Info</label>
+  <input type="text" id="contact"/>
+
+  <label>Tags (separate with commas)</label>
+  <input type="text" id="tags"/>
+
+  <label>Contact Level</label>
+  <select id="intimacy">
+    <option value="Close Contact">Close Contact</option>
+    <option value="Regular Contact">Regular Contact</option>
+    <option value="Potential Contact">Potential Contact</option>
+  </select>
+
+
+  <label>Notes</label>
+  <textarea id="notes"></textarea>
+
+  <button onclick="savePerson()">Save Contact</button>
+
+  <a href="index.html">
+    <button style="margin-top:10px;">📋 Back to Contact List</button>
+  </a>
+
+  <div class="result" id="resultBox" style="display:none;"></div>
+
+  <script>
+    // ✅ 替换成你自己的 Supabase URL 和 Key
+    const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function savePerson() {
+      const name = document.getElementById('name').value;
+      const company = document.getElementById('company').value;
+      const contact = document.getElementById('contact').value;
+      const tags = document.getElementById('tags').value;
+      const intimacy = document.getElementById('intimacy').value;
+      const notes = document.getElementById('notes').value;
+
+      const { data, error } = await supabase.from('contacts').insert([
+        { name, company, contact, tags, intimacy, notes }
+      ]);
+
+      const resultBox = document.getElementById('resultBox');
+      resultBox.style.display = 'block';
+
+      if (error) {
+        resultBox.innerHTML = `<p style="color:red;">❌ Save failed: ${error.message}</p>`;
+      } else {
+        resultBox.innerHTML = `<p style="color:green;">✅ Successfully saved contact: ${name}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
