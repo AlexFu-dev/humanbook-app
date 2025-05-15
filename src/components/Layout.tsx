@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import Auth from './Auth';
 
 interface LayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -22,7 +22,8 @@ export default function Layout({ children }: LayoutProps) {
                 Mind Map View
               </Link>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <Auth />
               <Link
                 href="/add"
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"

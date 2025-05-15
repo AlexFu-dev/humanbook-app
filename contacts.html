@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contact List (Level + Search + Edit)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .contact-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .contact-section {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .section-title {
+      text-align: left;
+      padding: 12px 15px;
+      background: #fff;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-title .count {
+      background: #eee;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.9em;
+      color: #666;
+    }
+    .close-section .section-title {
+      background: #e6f7ff;
+      color: #1677ff;
+    }
+    .regular-section .section-title {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+    .potential-section .section-title {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      background: white;
+    }
+    .card:last-child {
+      margin-bottom: 0;
+    }
+    .card p {
+      margin: 4px 0;
+    }
+    .btn {
+      padding: 6px 12px;
+      margin-right: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .edit-btn {
+      background-color: #1677ff;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #ff4d4f;
+      color: white;
+    }
+    .save-btn {
+      background-color: #52c41a;
+      color: white;
+    }
+    .cancel-btn {
+      background-color: #aaa;
+      color: white;
+    }
+    input, textarea, select {
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 4px;
+    }
+    #searchBox {
+      margin: 20px 0;
+      padding: 8px;
+      width: 100%;
+      font-size: 16px;
+    }
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      .btn {
+        padding: 8px 12px;
+      }
+      .card {
+        padding: 10px;
+      }
+      .section-title {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-actions">
+    <h1>📒 Contact List</h1>
+    <div class="user-info">
+      <span id="userEmail"></span>
+      <button class="btn" onclick="handleLogout()" style="background-color:#ff4d4f;">Logout</button>
+    </div>
+  </div>
+
+  <a href="add.html">
+    <button class="btn" style="background-color:#52c41a; color:white;">➕ Add Contact</button>
+  </a>
+
+  <input id="searchBox" type="text" placeholder="🔍 Search by name, company or notes" oninput="filterContacts()" />
+
+  <div class="contact-sections">
+    <div id="closeContacts" class="contact-section close-section">
+      <div class="section-title">
+        <span>Close Contacts</span>
+        <span class="count">0</span>
+      </div>
+    </div>
+    <div id="regularContacts" class="contact-section regular-section">
+      <div class="section-title">
+        <span>Regular Contacts</span>
+        <span class="count">0</span>
+      </div>
+    </div>
+    <div id="potentialContacts" class="contact-section potential-section">
+      <div class="section-title">
+        <span>Potential Contacts</span>
+        <span class="count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://yoxdchhonsmuzkdqbwvv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveGRjaGhvbnNtdXprZHFid3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczMzgxNzEsImV4cCI6MjA2MjkxNDE3MX0.XTvBIibxiesRSFDjTs-vyBJlaaEujZBQabd1CLR5Atk";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Check authentication on page load
+    window.addEventListener('load', async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      // Display user email
+      document.getElementById('userEmail').textContent = session.user.email;
+      
+      // Fetch contacts
+      fetchContacts();
+    });
+
+    async function handleLogout() {
+      const { error } = await supabase.auth.signOut();
+      if (!error) {
+        window.location.href = 'index.html';
+      }
+    }
+
+    let allContacts = [];
+
+    async function fetchContacts() {
+      console.log('Fetching contacts...');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('id', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching contacts:', error);
+        const list = document.getElementById('contactList');
+        list.innerHTML = `<p style="color:red;">❌ Failed to fetch: ${error.message}</p>`;
+        return;
+      }
+
+      console.log('Fetched contacts:', data);
+      allContacts = data;
+      renderContacts(allContacts);
+    }
+
+    function renderContacts(contacts) {
+      console.log('Rendering contacts:', contacts);
+      
+      // Clear all sections
+      document.getElementById('closeContacts').innerHTML = '<div class="section-title"><span>Close Contacts</span><span class="count">0</span></div>';
+      document.getElementById('regularContacts').innerHTML = '<div class="section-title"><span>Regular Contacts</span><span class="count">0</span></div>';
+      document.getElementById('potentialContacts').innerHTML = '<div class="section-title"><span>Potential Contacts</span><span class="count">0</span></div>';
+
+      if (!contacts || contacts.length === 0) {
+        console.log('No contacts to display');
+        document.getElementById('closeContacts').innerHTML += '<p style="text-align: center; color: #666;">No contacts found</p>';
+        return;
+      }
+
+      // Count trackers
+      const counts = {
+        'Close Contact': 0,
+        'Regular Contact': 0,
+        'Potential Contact': 0
+      };
+
+      // Sort and categorize contacts
+      contacts.forEach(contact => {
+        console.log('Processing contact:', contact);
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `contact-${contact.id}`;
+        card.innerHTML = renderDisplayMode(contact);
+
+        // Add to appropriate section based on intimacy level
+        let targetSection;
+        switch (contact.intimacy) {
+          case 'Close Contact':
+          case '熟络人脉':
+            targetSection = 'closeContacts';
+            counts['Close Contact']++;
+            break;
+          case 'Regular Contact':
+          case '一般人脉':
+            targetSection = 'regularContacts';
+            counts['Regular Contact']++;
+            break;
+          case 'Potential Contact':
+          case '潜在人脉':
+            targetSection = 'potentialContacts';
+            counts['Potential Contact']++;
+            break;
+          default:
+            console.log('Unknown intimacy level:', contact.intimacy);
+            targetSection = 'potentialContacts';
+            counts['Potential Contact']++;
+        }
+
+        console.log(`Adding contact ${contact.name} to section ${targetSection}`);
+        document.getElementById(targetSection).appendChild(card);
+      });
+
+      // Update counts in section titles
+      document.querySelector('#closeContacts .count').textContent = counts['Close Contact'];
+      document.querySelector('#regularContacts .count').textContent = counts['Regular Contact'];
+      document.querySelector('#potentialContacts .count').textContent = counts['Potential Contact'];
+
+      console.log('Final counts:', counts);
+
+      // Add "No contacts" message if a section is empty
+      const sections = {
+        'closeContacts': 'Close Contacts',
+        'regularContacts': 'Regular Contacts',
+        'potentialContacts': 'Potential Contacts'
+      };
+
+      for (const [sectionId, title] of Object.entries(sections)) {
+        const section = document.getElementById(sectionId);
+        if (section.children.length === 1) { // Only has title div
+          const emptyMessage = document.createElement('p');
+          emptyMessage.style.textAlign = 'center';
+          emptyMessage.style.color = '#999';
+          emptyMessage.textContent = `No ${title.toLowerCase()} found`;
+          section.appendChild(emptyMessage);
+        }
+      }
+    }
+
+    function filterContacts() {
+      const keyword = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = allContacts.filter(c =>
+        (c.name || '').toLowerCase().includes(keyword) ||
+        (c.company || '').toLowerCase().includes(keyword) ||
+        (c.notes || '').toLowerCase().includes(keyword)
+      );
+      renderContacts(filtered);
+    }
+
+    function renderDisplayMode(contact) {
+      console.log('Rendering display mode for contact:', contact);
+      return `
+        <div>
+          <p><strong>Name: </strong>${contact.name || ''}</p>
+          <p><strong>Company: </strong>${contact.company || ''}</p>
+          <p><strong>Contact Info: </strong>${contact.contact || ''}</p>
+          <p><strong>Contact Level: </strong>${contact.intimacy || ''}</p>
+          <p><strong>Notes: </strong>${contact.notes || ''}</p>
+          <button class="btn edit-btn" onclick="enterEditMode(${contact.id})">Edit</button>
+          <button class="btn delete-btn" onclick="deleteContact(${contact.id})">Delete</button>
+        </div>
+      `;
+    }
+
+    function renderEditMode(contact) {
+      return `
+        <div>
+          <label>Name</label>
+          <input id="edit-name-${contact.id}" value="${contact.name}" />
+          <label>Company</label>
+          <input id="edit-company-${contact.id}" value="${contact.company}" />
+          <label>Contact Info</label>
+          <input id="edit-contact-${contact.id}" value="${contact.contact}" />
+          <label>Contact Level</label>
+          <select id="edit-intimacy-${contact.id}">
+            <option value="Close Contact" ${contact.intimacy === 'Close Contact' ? 'selected' : ''}>Close Contact</option>
+            <option value="Regular Contact" ${contact.intimacy === 'Regular Contact' ? 'selected' : ''}>Regular Contact</option>
+            <option value="Potential Contact" ${contact.intimacy === 'Potential Contact' ? 'selected' : ''}>Potential Contact</option>
+          </select>
+          <label>Notes</label>
+          <textarea id="edit-notes-${contact.id}">${contact.notes}</textarea>
+          <button class="btn save-btn" onclick="saveEdit(${contact.id})">Save</button>
+          <button class="btn cancel-btn" onclick="cancelEdit(${contact.id})">Cancel</button>
+        </div>
+      `;
+    }
+
+    function enterEditMode(id) {
+      const card = document.getElementById(`contact-${id}`);
+      const name = card.querySelector("p:nth-child(1)").innerText.replace("Name: ", "").trim();
+      const company = card.querySelector("p:nth-child(2)").innerText.replace("Company: ", "").trim();
+      const contact = card.querySelector("p:nth-child(3)").innerText.replace("Contact Info: ", "").trim();
+      const intimacy = card.querySelector("p:nth-child(4)").innerText.replace("Contact Level: ", "").trim();
+      const notes = card.querySelector("p:nth-child(5)").innerText.replace("Notes: ", "").trim();
+      card.innerHTML = renderEditMode({ id, name, company, contact, intimacy, notes });
+    }
+
+    function cancelEdit(id) {
+      supabase.from('contacts').select('*').eq('id', id).single().then(({ data }) => {
+        const card = document.getElementById(`contact-${id}`);
+        card.innerHTML = renderDisplayMode(data);
+      });
+    }
+
+    async function saveEdit(id) {
+      const name = document.getElementById(`edit-name-${id}`).value;
+      const company = document.getElementById(`edit-company-${id}`).value;
+      const contact = document.getElementById(`edit-contact-${id}`).value;
+      const intimacy = document.getElementById(`edit-intimacy-${id}`).value;
+      const notes = document.getElementById(`edit-notes-${id}`).value;
+
+      const { error } = await supabase.from('contacts')
+        .update({ name, company, contact, intimacy, notes })
+        .eq('id', id);
+
+      if (error) {
+        alert("❌ Save failed: " + error.message);
+      } else {
+        alert("✅ Updated successfully!");
+        fetchContacts();
+      }
+    }
+
+    async function deleteContact(id) {
+      if (!confirm("Are you sure you want to delete this contact?")) return;
+      const { error } = await supabase.from('contacts').delete().eq('id', id);
+      if (error) {
+        alert("❌ Delete failed: " + error.message);
+      } else {
+        alert("✅ Deleted successfully!");
+        fetchContacts();
+      }
+    }
+  </script>
+</body>
+</html>

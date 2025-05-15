@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>添加人脉</title>
-  <!-- 引入 Supabase JS SDK -->
+  <title>Add Contact</title>
+  <!-- Import Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -18,62 +18,116 @@
       margin-top: 12px;
       font-weight: bold;
     }
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       padding: 8px;
       margin-top: 4px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
     }
     button {
       margin-top: 20px;
       padding: 10px 16px;
+      background: #1677ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4096ff;
     }
     .result {
       margin-top: 30px;
       padding: 10px;
-      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .success {
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: #52c41a;
+    }
+    .error {
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      color: #ff4d4f;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>添加人脉</h1>
+  <div class="header">
+    <h1>Add Contact</h1>
+    <div class="user-info">
+      <span id="userEmail"></span>
+      <button onclick="handleLogout()" style="background-color: #ff4d4f; margin-top: 0;">Logout</button>
+    </div>
+  </div>
 
-  <label>姓名</label>
-  <input type="text" id="name"/>
+  <label>Name</label>
+  <input type="text" id="name" required/>
 
-  <label>公司</label>
+  <label>Company</label>
   <input type="text" id="company"/>
 
-  <label>联系方式</label>
+  <label>Contact Info</label>
   <input type="text" id="contact"/>
 
-  <label>标签（多个用逗号隔开）</label>
+  <label>Tags (separate with commas)</label>
   <input type="text" id="tags"/>
 
-  <label>人脉等级</label>
+  <label>Contact Level</label>
   <select id="intimacy">
-    <option value="熟络人脉">熟络人脉</option>
-    <option value="一般人脉">一般人脉</option>
-    <option value="潜在人脉">潜在人脉</option>
+    <option value="Close Contact">Close Contact</option>
+    <option value="Regular Contact">Regular Contact</option>
+    <option value="Potential Contact">Potential Contact</option>
   </select>
 
-
-  <label>备注</label>
+  <label>Notes</label>
   <textarea id="notes"></textarea>
 
-  <button onclick="savePerson()">保存人脉</button>
+  <button onclick="savePerson()">Save Contact</button>
 
-  <a href="index.html">
-    <button style="margin-top:10px;">📋 返回人脉列表</button>
+  <a href="contacts.html">
+    <button style="margin-left: 10px; background: #8c8c8c;">Back to Contact List</button>
   </a>
 
   <div class="result" id="resultBox" style="display:none;"></div>
 
   <script>
-    // ✅ 替换成你自己的 Supabase URL 和 Key
-    const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
+    const SUPABASE_URL = "https://yoxdchhonsmuzkdqbwvv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveGRjaGhvbnNtdXprZHFid3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczMzgxNzEsImV4cCI6MjA2MjkxNDE3MX0.XTvBIibxiesRSFDjTs-vyBJlaaEujZBQabd1CLR5Atk";
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Check authentication on page load
+    window.addEventListener('load', async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      // Display user email
+      document.getElementById('userEmail').textContent = session.user.email;
+    });
+
+    async function handleLogout() {
+      const { error } = await supabase.auth.signOut();
+      if (!error) {
+        window.location.href = 'index.html';
+      }
+    }
 
     async function savePerson() {
       const name = document.getElementById('name').value;
@@ -83,18 +137,47 @@
       const intimacy = document.getElementById('intimacy').value;
       const notes = document.getElementById('notes').value;
 
+      if (!name) {
+        showResult('Name is required', false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.from('contacts').insert([
-        { name, company, contact, tags, intimacy, notes }
+        { 
+          name, 
+          company, 
+          contact, 
+          tags, 
+          intimacy, 
+          notes,
+          user_id: session.user.id 
+        }
       ]);
 
       const resultBox = document.getElementById('resultBox');
       resultBox.style.display = 'block';
 
       if (error) {
-        resultBox.innerHTML = `<p style="color:red;">❌ 保存失败：${error.message}</p>`;
+        showResult(`Failed to save contact: ${error.message}`, false);
       } else {
-        resultBox.innerHTML = `<p style="color:green;">✅ 已成功保存人脉：${name}</p>`;
+        showResult(`Successfully saved contact: ${name}`, true);
+        // Clear form
+        document.getElementById('name').value = '';
+        document.getElementById('company').value = '';
+        document.getElementById('contact').value = '';
+        document.getElementById('tags').value = '';
+        document.getElementById('intimacy').value = 'Close Contact';
+        document.getElementById('notes').value = '';
       }
+    }
+
+    function showResult(message, isSuccess) {
+      const resultBox = document.getElementById('resultBox');
+      resultBox.style.display = 'block';
+      resultBox.className = `result ${isSuccess ? 'success' : 'error'}`;
+      resultBox.innerHTML = message;
     }
   </script>
 </body>

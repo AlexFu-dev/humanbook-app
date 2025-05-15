@@ -1,4 +1,9 @@
+import { Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import { Contact } from '@/lib/supabase';
+import ImageUpload from './ImageUpload';
+
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJNMjAgMjFWMTlDMjAgMTYuNzkwOCAxOC4yMDkxIDE1IDE2IDE1SDhDNS43OTA4NiAxNSA0IDE2Ljc5MDkgNCAxOVYyMU0xNiA3QzE2IDkuMjA5MTQgMTQuMjA5MSAxMSAxMiAxMUM5Ljc5MDg2IDExIDggOS4yMDkxNCA4IDdDOCA0Ljc5MDg2IDkuNzkwODYgMyAxMiAzQzE0LjIwOTEgMyAxNiA0Ljc5MDg2IDE2IDdaIi8+PC9zdmc+';
 
 interface ContactModalProps {
   contact: Contact | null;
@@ -7,77 +12,137 @@ interface ContactModalProps {
 }
 
 export default function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
-  if (!isOpen || !contact) return null;
+  const handleImageUpload = (newImageUrl: string) => {
+    // The contact will be automatically updated in the database
+    // You might want to trigger a refresh of the network visualization here
+    window.location.reload(); // Simple solution - you might want to implement a more elegant refresh
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 relative">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
+        </Transition.Child>
 
-        {/* Contact information */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold
-              ${contact.intimacy === 'Close Contact' ? 'bg-green-500' : 'bg-blue-500'}`}>
-              {contact.name.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">{contact.name}</h2>
-              <p className="text-gray-500">{contact.company}</p>
-            </div>
-          </div>
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                <Dialog.Title
+                  as="h3"
+                  className="text-lg font-medium leading-6 text-gray-900"
+                >
+                  Contact Details
+                </Dialog.Title>
 
-          <div className="grid grid-cols-1 gap-4 mt-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Contact Info</h3>
-              <p className="mt-1 text-gray-900">{contact.contact || 'No contact information'}</p>
-            </div>
+                {contact && (
+                  <div className="mt-4">
+                    {/* Profile Image Section */}
+                    <div className="mb-6 flex flex-col items-center">
+                      <div className="relative w-24 h-24 mb-4">
+                        <img
+                          src={contact.image_url || DEFAULT_AVATAR}
+                          alt={contact.name}
+                          className="w-full h-full rounded-full object-cover border-2 border-gray-200"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = DEFAULT_AVATAR;
+                          }}
+                        />
+                      </div>
+                      <ImageUpload
+                        contactId={contact.id.toString()}
+                        currentImageUrl={contact.image_url}
+                        onUploadComplete={handleImageUpload}
+                      />
+                    </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Contact Level</h3>
-              <p className="mt-1 text-gray-900">{contact.intimacy}</p>
-            </div>
+                    {/* Contact Details */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Name
+                        </label>
+                        <p className="mt-1 text-gray-900">{contact.name}</p>
+                      </div>
 
-            {contact.tags && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Tags</h3>
-                <div className="mt-1 flex flex-wrap gap-2">
-                  {contact.tags.split(',').map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                    >
-                      {tag.trim()}
-                    </span>
-                  ))}
+                      {contact.company && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Company
+                          </label>
+                          <p className="mt-1 text-gray-900">{contact.company}</p>
+                        </div>
+                      )}
+
+                      {contact.contact && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Contact
+                          </label>
+                          <p className="mt-1 text-gray-900">{contact.contact}</p>
+                        </div>
+                      )}
+
+                      {contact.tags && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Tags
+                          </label>
+                          <div className="mt-1 flex flex-wrap gap-2">
+                            {contact.tags.split(',').map((tag, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              >
+                                #{tag.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Intimacy Level
+                        </label>
+                        <p className="mt-1 text-gray-900">{contact.intimacy}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    onClick={onClose}
+                  >
+                    Close
+                  </button>
                 </div>
-              </div>
-            )}
-
-            {contact.notes && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-                <p className="mt-1 text-gray-900 whitespace-pre-wrap">{contact.notes}</p>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Added On</h3>
-              <p className="mt-1 text-gray-900">
-                {new Date(contact.created_at).toLocaleDateString()}
-              </p>
-            </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition>
   );
 } 

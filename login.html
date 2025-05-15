@@ -152,7 +152,7 @@
         window.addEventListener('load', async () => {
             const { data: { session }, error } = await supabase.auth.getSession();
             if (session) {
-                window.location.href = 'contacts.html';
+                window.location.href = 'index.html';
             }
         });
 
@@ -193,7 +193,7 @@
 
                 message.innerHTML = '<div class="success-message">Login successful! Redirecting...</div>';
                 setTimeout(() => {
-                    window.location.href = 'contacts.html';
+                    window.location.href = 'index.html';
                 }, 1000);
             } catch (error) {
                 message.innerHTML = `<div class="error-message">${error.message}</div>`;

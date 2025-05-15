@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Network } from 'vis-network';
+import { Network, Options, NodeOptions, IdType } from 'vis-network';
 import Layout from '@/components/Layout';
 import ContactModal from '@/components/ContactModal';
 import { supabase, type Contact } from '@/lib/supabase';
@@ -17,6 +17,28 @@ const OUTER_CIRCLE_RADIUS = NODE_SIZE * 10;    // For node positioning
 const RING_INNER_SIZE = INNER_CIRCLE_RADIUS * 2;
 const RING_MIDDLE_SIZE = MIDDLE_CIRCLE_RADIUS * 2;
 const RING_OUTER_SIZE = OUTER_CIRCLE_RADIUS * 2;
+
+// Define gradients for rings
+const GRADIENTS = {
+  inner: {
+    start: 'rgba(22, 163, 74, 0.15)',
+    end: 'rgba(22, 163, 74, 0.05)',
+    stroke: 'rgba(21, 128, 61, 0.8)'  // More opaque border
+  },
+  middle: {
+    start: 'rgba(79, 70, 229, 0.15)',
+    end: 'rgba(79, 70, 229, 0.05)',
+    stroke: 'rgba(67, 56, 202, 0.8)'  // More opaque border
+  },
+  outer: {
+    start: 'rgba(124, 58, 237, 0.15)',
+    end: 'rgba(124, 58, 237, 0.05)',
+    stroke: 'rgba(109, 40, 217, 0.8)'  // More opaque border
+  }
+};
+
+// Add this constant at the top with other constants
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJNMjAgMjFWMTlDMjAgMTYuNzkwOCAxOC4yMDkxIDE1IDE2IDE1SDhDNS43OTA4NiAxNSA0IDE2Ljc5MDkgNCAxOVYyMU0xNiA3QzE2IDkuMjA5MTQgMTQuMjA5MSAxMSAxMiAxMUM5Ljc5MDg2IDExIDggOS4yMDkxNCA4IDdDOCA0Ljc5MDg2IDkuNzkwODYgMyAxMiAzQzE0LjIwOTEgMyAxNiA0Ljc5MDg2IDE2IDdaIi8+PC9zdmc+';
 
 export default function MapPage() {
   const networkRef = useRef<HTMLDivElement>(null);
@@ -126,7 +148,7 @@ export default function MapPage() {
         const potentialContacts = contacts.filter(c => c.intimacy === 'Potential Contact');
 
         // Network configuration - defined first to apply to all nodes
-        const options = {
+        const options: Options = {
           nodes: {
             fixed: true,
             shadow: {
@@ -136,18 +158,20 @@ export default function MapPage() {
               x: 5,
               y: 5
             },
-            shape: 'circle',
+            shape: 'circularImage',
             size: NODE_SIZE,
-            font: {
-              color: 'white',
-              size: 18,
-              face: 'Inter, system-ui, sans-serif',
-              mod: 'bold',
-              strokeWidth: 2,
-              strokeColor: 'rgba(0,0,0,0.2)',
-            },
             borderWidth: 3,
             borderWidthSelected: 4,
+            brokenImage: DEFAULT_AVATAR,
+            image: DEFAULT_AVATAR,
+            font: {
+              color: '#1e293b',
+              size: 16,
+              face: 'Inter, system-ui, sans-serif',
+              bold: '700' as any,
+              strokeWidth: 4,
+              strokeColor: 'rgba(255,255,255,0.9)',
+            },
             chosen: true,
             scaling: {
               min: 1,
@@ -171,13 +195,14 @@ export default function MapPage() {
               roundness: 0.5
             },
             color: {
-              color: '#e2e8f0',
+              color: '#cbd5e1',
               opacity: 0.6,
               highlight: '#94a3b8',
+              hover: '#94a3b8'
             },
-            width: 2,
+            width: 1.5,
             selectionWidth: 2,
-            hoverWidth: 3,
+            hoverWidth: 2,
             dashes: [6, 4],
           },
           interaction: {
@@ -185,6 +210,7 @@ export default function MapPage() {
             dragView: true,
             zoomView: true,
             tooltipDelay: 200,
+            hover: true,
             selectConnectedEdges: true,
             hoverConnectedEdges: true,
           },
@@ -280,9 +306,11 @@ export default function MapPage() {
             id: contact.id.toString(),
             label,
             title,
-            color: nodeColors,
             x,
             y,
+            color: nodeColors,
+            image: contact.image_url || DEFAULT_AVATAR,
+            brokenImage: DEFAULT_AVATAR,
             fixed: true
           };
         };
@@ -399,6 +427,7 @@ export default function MapPage() {
             },
             x: 0,
             y: 0,
+            image: '/my-avatar.png',  // Add your own avatar
             fixed: true
           }
         ];
@@ -532,48 +561,78 @@ export default function MapPage() {
   return (
     <Layout>
       <div className="relative w-full h-[calc(100vh-4rem)]">
-        {/* SVG Rings */}
+        {/* Background with gradient */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            background: 'radial-gradient(circle at center, rgb(248 250 252), rgb(241 245 249))',
+            backgroundSize: '200% 200%',
+          }}
+        />
+        
+        {/* SVG Rings with enhanced styling */}
         <svg 
           className="absolute inset-0 w-full h-full z-0 pointer-events-none"
-          style={{ 
-            background: 'linear-gradient(135deg, rgb(241 245 249 / 0.9), rgb(248 250 252 / 0.9))'
-          }}
+          style={{ mixBlendMode: 'multiply' }}
         >
+          <defs>
+            {/* Gradients for rings */}
+            <radialGradient id="innerGradient" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={GRADIENTS.inner.start} />
+              <stop offset="100%" stopColor={GRADIENTS.inner.end} />
+            </radialGradient>
+            <radialGradient id="middleGradient" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={GRADIENTS.middle.start} />
+              <stop offset="100%" stopColor={GRADIENTS.middle.end} />
+            </radialGradient>
+            <radialGradient id="outerGradient" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={GRADIENTS.outer.start} />
+              <stop offset="100%" stopColor={GRADIENTS.outer.end} />
+            </radialGradient>
+          </defs>
+
           <g transform={`translate(${viewport.centerX}, ${viewport.centerY}) scale(${viewport.scale})`}>
-            {/* Inner ring (Close Contacts) */}
+            {/* Outer ring (Potential Contacts) */}
             <circle
               cx={0}
               cy={0}
-              r={INNER_CIRCLE_RADIUS}
-              fill="rgba(22, 163, 74, 0.15)"
-              stroke="rgba(21, 128, 61, 1)"
-              strokeWidth={2 / viewport.scale}
+              r={OUTER_CIRCLE_RADIUS}
+              fill="url(#outerGradient)"
+              stroke={GRADIENTS.outer.stroke}
+              strokeWidth={3 / viewport.scale}
+              strokeDasharray={`${8 / viewport.scale},${4 / viewport.scale}`}
             />
             {/* Middle ring (Regular Contacts) */}
             <circle
               cx={0}
               cy={0}
               r={MIDDLE_CIRCLE_RADIUS}
-              fill="rgba(79, 70, 229, 0.15)"
-              stroke="rgba(67, 56, 202, 1)"
-              strokeWidth={2 / viewport.scale}
+              fill="url(#middleGradient)"
+              stroke={GRADIENTS.middle.stroke}
+              strokeWidth={3 / viewport.scale}
+              strokeDasharray={`${8 / viewport.scale},${4 / viewport.scale}`}
             />
-            {/* Outer ring (Potential Contacts) */}
+            {/* Inner ring (Close Contacts) */}
             <circle
               cx={0}
               cy={0}
-              r={OUTER_CIRCLE_RADIUS}
-              fill="rgba(124, 58, 237, 0.15)"
-              stroke="rgba(109, 40, 217, 1)"
-              strokeWidth={2 / viewport.scale}
+              r={INNER_CIRCLE_RADIUS}
+              fill="url(#innerGradient)"
+              stroke={GRADIENTS.inner.stroke}
+              strokeWidth={3 / viewport.scale}
+              strokeDasharray={`${8 / viewport.scale},${4 / viewport.scale}`}
             />
           </g>
         </svg>
 
-        {/* Network visualization container */}
+        {/* Network visualization container with glass effect */}
         <div 
           ref={networkRef} 
           className="absolute inset-0 w-full h-full z-10"
+          style={{
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         />
 
         {/* Contact modal */}

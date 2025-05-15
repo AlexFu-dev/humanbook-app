@@ -1,17 +1,52 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://hvnighqklagozkpztjuc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg';
+const supabaseUrl = 'https://yoxdchhonsmuzkdqbwvv.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveGRjaGhvbnNtdXprZHFid3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczMzgxNzEsImV4cCI6MjA2MjkxNDE3MX0.XTvBIibxiesRSFDjTs-vyBJlaaEujZBQabd1CLR5Atk';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-export interface Contact {
+// Helper function to check if user is authenticated
+export async function isAuthenticated() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  return !!session;
+}
+
+// Helper function to check if contacts bucket exists
+export async function checkContactsBucket() {
+  try {
+    // Check if the bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      return { success: false, error: listError };
+    }
+
+    console.log('Available buckets:', buckets);
+
+    // Check if contacts bucket exists
+    const contactsBucket = buckets?.find(b => b.name === 'contacts');
+    if (!contactsBucket) {
+      return { 
+        success: false, 
+        error: 'Contacts bucket not found. Please ensure it exists in your Supabase dashboard.' 
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return { success: false, error };
+  }
+}
+
+export type Contact = {
   id: number;
   name: string;
-  company: string;
-  contact: string;
-  tags: string;
-  intimacy: string;
-  notes: string;
+  company?: string;
+  contact?: string;
+  tags?: string;
+  intimacy: 'Close Contact' | 'Regular Contact' | 'Potential Contact';
+  image_url?: string;
   created_at: string;
-} 
+}; 
