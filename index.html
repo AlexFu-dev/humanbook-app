@@ -125,7 +125,7 @@
           <p><strong>姓名：</strong>${contact.name}</p>
           <p><strong>公司：</strong>${contact.company}</p>
           <p><strong>联系方式：</strong>${contact.contact}</p>
-          <p><strong>亲密度：</strong>${contact.intimacy}</p>
+          <p><strong>人脉等级：</strong>${contact.intimacy}</p>
           <p><strong>备注：</strong>${contact.notes}</p>
           <button class="btn edit-btn" onclick="enterEditMode(${contact.id})">编辑</button>
           <button class="btn delete-btn" onclick="deleteContact(${contact.id})">删除</button>
@@ -142,8 +142,12 @@
           <input id="edit-company-${contact.id}" value="${contact.company}" />
           <label>联系方式</label>
           <input id="edit-contact-${contact.id}" value="${contact.contact}" />
-          <label>亲密度</label>
-          <input type="range" min="1" max="10" id="edit-intimacy-${contact.id}" value="${contact.intimacy}" />
+          <label>人脉等级</label>
+          <select id="edit-intimacy-${contact.id}">
+            <option value="熟络人脉" ${contact.intimacy === '熟络人脉' ? 'selected' : ''}>熟络人脉</option>
+            <option value="一般人脉" ${contact.intimacy === '一般人脉' ? 'selected' : ''}>一般人脉</option>
+            <option value="潜在人脉" ${contact.intimacy === '潜在人脉' ? 'selected' : ''}>潜在人脉</option>
+          </select>
           <label>备注</label>
           <textarea id="edit-notes-${contact.id}">${contact.notes}</textarea>
           <button class="btn save-btn" onclick="saveEdit(${contact.id})">保存</button>
