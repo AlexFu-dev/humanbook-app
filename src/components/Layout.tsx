@@ -11,9 +11,15 @@ export default function Layout({ children }: LayoutProps) {
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-8">
               <Link href="/" className="text-xl font-bold text-gray-800">
                 Contacts Manager
+              </Link>
+              <Link
+                href="/map"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Mind Map View
               </Link>
             </div>
             <div className="flex items-center">
