@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>人脉列表（含编辑 + 搜索）</title>
+  <title>人脉列表（等级+搜索+编辑）</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -46,13 +46,13 @@
       background-color: #aaa;
       color: white;
     }
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       margin-bottom: 6px;
       padding: 4px;
     }
     #searchBox {
-      margin-bottom: 20px;
+      margin: 20px 0;
       padding: 8px;
       width: 100%;
       font-size: 16px;
@@ -71,11 +71,11 @@
   <div id="contactList"></div>
 
   <script>
-    const SUPABASE_URL = "https://hvnighqklagozkpztjuc.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bmlnaHFrbGFnb3prcHp0anVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjA5OTMsImV4cCI6MjA2MjgzNjk5M30.S3ZqVlcEZ9s7c-KuShF6z0AJovq0YM_W6hJ49joyFLg";
-
+    const SUPABASE_URL = "https://your-project.supabase.co";
+    const SUPABASE_ANON_KEY = "your-anon-key";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let allContacts = []; // 保存所有联系人用于搜索
+
+    let allContacts = [];
 
     async function fetchContacts() {
       const { data, error } = await supabase.from('contacts').select('*').order('id', { ascending: false });
@@ -112,9 +112,9 @@
     function filterContacts() {
       const keyword = document.getElementById('searchBox').value.toLowerCase();
       const filtered = allContacts.filter(c =>
-        (c.name || "").toLowerCase().includes(keyword) ||
-        (c.company || "").toLowerCase().includes(keyword) ||
-        (c.notes || "").toLowerCase().includes(keyword)
+        (c.name || '').toLowerCase().includes(keyword) ||
+        (c.company || '').toLowerCase().includes(keyword) ||
+        (c.notes || '').toLowerCase().includes(keyword)
       );
       renderContacts(filtered);
     }
@@ -161,7 +161,7 @@
       const name = card.querySelector("p:nth-child(1)").innerText.replace("姓名：", "").trim();
       const company = card.querySelector("p:nth-child(2)").innerText.replace("公司：", "").trim();
       const contact = card.querySelector("p:nth-child(3)").innerText.replace("联系方式：", "").trim();
-      const intimacy = card.querySelector("p:nth-child(4)").innerText.replace("亲密度：", "").trim();
+      const intimacy = card.querySelector("p:nth-child(4)").innerText.replace("人脉等级：", "").trim();
       const notes = card.querySelector("p:nth-child(5)").innerText.replace("备注：", "").trim();
       card.innerHTML = renderEditMode({ id, name, company, contact, intimacy, notes });
     }
@@ -177,7 +177,7 @@
       const name = document.getElementById(`edit-name-${id}`).value;
       const company = document.getElementById(`edit-company-${id}`).value;
       const contact = document.getElementById(`edit-contact-${id}`).value;
-      const intimacy = parseInt(document.getElementById(`edit-intimacy-${id}`).value);
+      const intimacy = document.getElementById(`edit-intimacy-${id}`).value;
       const notes = document.getElementById(`edit-notes-${id}`).value;
 
       const { error } = await supabase.from('contacts').update({
