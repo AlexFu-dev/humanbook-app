@@ -49,8 +49,13 @@
   <label>标签（多个用逗号隔开）</label>
   <input type="text" id="tags"/>
 
-  <label>亲密度（1~10）</label>
-  <input type="range" min="1" max="10" id="intimacy" />
+  <label>人脉等级</label>
+  <select id="intimacy">
+    <option value="熟络人脉">熟络人脉</option>
+    <option value="一般人脉">一般人脉</option>
+    <option value="潜在人脉">潜在人脉</option>
+  </select>
+
 
   <label>备注</label>
   <textarea id="notes"></textarea>
