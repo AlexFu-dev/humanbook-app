@@ -22,6 +22,12 @@ export default function Layout({ children }: LayoutProps) {
                 Contact List
               </Link>
               <Link
+                href="/analytics-test"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Analytics Test
+              </Link>
+              <Link
                 href="/map"
                 className="text-gray-600 hover:text-gray-900"
               >
