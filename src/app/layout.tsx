@@ -5,6 +5,12 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata = {
   title: 'Contacts Manager',
   description: 'Manage your contacts with ease',
