@@ -25,17 +25,37 @@ export default function AddContact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Get the current user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error('You must be logged in to add contacts');
+      return;
+    }
+
+    // Create a contact object with only non-empty values
+    const contactData = {
+      name: formData.name,
+      intimacy: formData.intimacy,
+      user_id: user.id,
+      ...(formData.company ? { company: formData.company } : {}),
+      ...(formData.contact ? { contact: formData.contact } : {}),
+      ...(formData.tags ? { tags: formData.tags } : {}),
+      ...(formData.notes ? { notes: formData.notes } : {})
+    };
+
     const { error } = await supabase
       .from('contacts')
-      .insert([formData]);
+      .insert([contactData]);
 
     if (error) {
-      toast.error('Failed to add contact');
+      console.error('Error adding contact:', error);
+      toast.error('Failed to add contact: ' + error.message);
       return;
     }
 
     toast.success('Contact added successfully');
-    router.push('/');
+    router.push('/contacts');
   };
 
   return (
@@ -118,7 +138,7 @@ export default function AddContact() {
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/contacts')}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Cancel

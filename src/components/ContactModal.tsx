@@ -1,7 +1,8 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Contact } from '@/lib/supabase';
 import ImageUpload from './ImageUpload';
+import { supabase } from '@/lib/supabase';
 
 const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJNMjAgMjFWMTlDMjAgMTYuNzkwOCAxOC4yMDkxIDE1IDE2IDE1SDhDNS43OTA4NiAxNSA0IDE2Ljc5MDkgNCAxOVYyMU0xNiA3QzE2IDkuMjA5MTQgMTQuMjA5MSAxMSAxMiAxMUM5Ljc5MDg2IDExIDggOS4yMDkxNCA4IDdDOCA0Ljc5MDg2IDkuNzkwODYgMyAxMiAzQzE0LjIwOTEgMyAxNiA0Ljc5MDg2IDE2IDdaIi8+PC9zdmc+';
 
@@ -12,7 +13,38 @@ interface ContactModalProps {
 }
 
 export default function ContactModal({ contact, isOpen, onClose }: ContactModalProps) {
+  const [imageUrl, setImageUrl] = useState<string>(DEFAULT_AVATAR);
+
+  useEffect(() => {
+    const refreshImageUrl = async () => {
+      if (contact?.image_url) {
+        // If the URL is already a signed URL and not expired, use it
+        if (contact.image_url.includes('token=')) {
+          setImageUrl(contact.image_url);
+          return;
+        }
+
+        // Extract the file path from the URL
+        const filePath = contact.image_url.split('/').pop();
+        if (filePath) {
+          const { data } = await supabase.storage
+            .from('contacts')
+            .createSignedUrl(filePath, 60 * 60 * 24); // 24 hours
+
+          if (data?.signedUrl) {
+            setImageUrl(data.signedUrl);
+          }
+        }
+      } else {
+        setImageUrl(DEFAULT_AVATAR);
+      }
+    };
+
+    refreshImageUrl();
+  }, [contact?.image_url]);
+
   const handleImageUpload = (newImageUrl: string) => {
+    setImageUrl(newImageUrl);
     // The contact will be automatically updated in the database
     // You might want to trigger a refresh of the network visualization here
     window.location.reload(); // Simple solution - you might want to implement a more elegant refresh
@@ -58,13 +90,10 @@ export default function ContactModal({ contact, isOpen, onClose }: ContactModalP
                     <div className="mb-6 flex flex-col items-center">
                       <div className="relative w-24 h-24 mb-4">
                         <img
-                          src={contact.image_url || DEFAULT_AVATAR}
+                          src={imageUrl}
                           alt={contact.name}
                           className="w-full h-full rounded-full object-cover border-2 border-gray-200"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = DEFAULT_AVATAR;
-                          }}
+                          onError={() => setImageUrl(DEFAULT_AVATAR)}
                         />
                       </div>
                       <ImageUpload

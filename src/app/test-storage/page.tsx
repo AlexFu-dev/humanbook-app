@@ -19,47 +19,21 @@ export default function TestStorage() {
     try {
       log('Testing Supabase Storage Configuration...');
 
-      // 1. List all buckets
-      log('\n1. Listing buckets...');
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        log('❌ Error listing buckets: ' + JSON.stringify(bucketsError));
-        return;
-      }
-      
-      log('✅ Available buckets: ' + JSON.stringify(buckets));
-
-      // 2. Create contacts bucket if it doesn't exist
-      if (!buckets.find(b => b.name === 'contacts')) {
-        log('\n2. Creating contacts bucket...');
-        const { data: newBucket, error: createError } = await supabase.storage.createBucket('contacts', {
-          public: false
-        });
-
-        if (createError) {
-          log('❌ Error creating bucket: ' + JSON.stringify(createError));
-          return;
-        }
-        log('✅ Created contacts bucket: ' + JSON.stringify(newBucket));
-      } else {
-        log('\n✅ Contacts bucket already exists');
-      }
-
-      // 3. Test bucket access
-      log('\n3. Testing bucket access...');
+      // 1. Test bucket access
+      log('\n1. Testing bucket access...');
       const { data: files, error: listError } = await supabase.storage
         .from('contacts')
         .list();
 
       if (listError) {
-        log('❌ Error listing files: ' + JSON.stringify(listError));
+        log('❌ Error accessing contacts bucket: ' + JSON.stringify(listError));
         return;
       }
-      log('✅ Successfully listed files: ' + JSON.stringify(files));
+      log('✅ Successfully accessed contacts bucket');
+      log('✅ Current files in bucket: ' + JSON.stringify(files));
 
-      // 4. Test bucket policies
-      log('\n4. Testing bucket policies...');
+      // 2. Test file upload
+      log('\n2. Testing file upload...');
       const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
       
       const { data: uploadData, error: uploadError } = await supabase.storage

@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { Session } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [session, setSession] = useState<Session | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -48,6 +50,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast.success('Logged out successfully');
+      router.push('/login');
     } catch (error: any) {
       toast.error(error.message || 'An error occurred');
     }

@@ -32,7 +32,7 @@ export default function EditContact({ params }: { params: { id: string } }) {
 
     if (error) {
       toast.error('Failed to fetch contact');
-      router.push('/');
+      router.push('/contacts');
       return;
     }
 
@@ -65,7 +65,7 @@ export default function EditContact({ params }: { params: { id: string } }) {
     }
 
     toast.success('Contact updated successfully');
-    router.push('/');
+    router.push('/contacts');
   };
 
   return (
@@ -148,7 +148,7 @@ export default function EditContact({ params }: { params: { id: string } }) {
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/contacts')}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Cancel

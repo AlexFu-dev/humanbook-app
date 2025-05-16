@@ -121,21 +121,21 @@ export default function ImageUpload({ contactId, currentImageUrl, onUploadComple
 
       console.log('File uploaded successfully:', uploadData);
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
+      // Get signed URL instead of public URL
+      const { data: urlData } = await supabase.storage
         .from('contacts')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
 
-      if (!urlData?.publicUrl) {
-        throw new Error('Failed to get public URL for uploaded file');
+      if (!urlData?.signedUrl) {
+        throw new Error('Failed to get signed URL for uploaded file');
       }
 
-      console.log('Got public URL:', urlData.publicUrl);
+      console.log('Got signed URL:', urlData.signedUrl);
 
       // Update contact with new image URL
       const { error: updateError } = await supabase
         .from('contacts')
-        .update({ image_url: urlData.publicUrl })
+        .update({ image_url: urlData.signedUrl })
         .eq('id', contactId);
 
       if (updateError) {
@@ -161,7 +161,7 @@ export default function ImageUpload({ contactId, currentImageUrl, onUploadComple
         }
       }
 
-      onUploadComplete(urlData.publicUrl);
+      onUploadComplete(urlData.signedUrl);
       toast.success('Image uploaded successfully!');
     } catch (error) {
       console.error('Error in image upload process:', error);

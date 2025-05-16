@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://yoxdchhonsmuzkdqbwvv.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlveGRjaGhvbnNtdXprZHFid3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczMzgxNzEsImV4cCI6MjA2MjkxNDE3MX0.XTvBIibxiesRSFDjTs-vyBJlaaEujZBQabd1CLR5Atk';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
 
 // Helper function to check if user is authenticated
 export async function isAuthenticated() {
@@ -14,23 +20,14 @@ export async function isAuthenticated() {
 // Helper function to check if contacts bucket exists
 export async function checkContactsBucket() {
   try {
-    // Check if the bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    // Try to list files in the contacts bucket directly
+    const { data, error } = await supabase.storage
+      .from('contacts')
+      .list();
     
-    if (listError) {
-      console.error('Error listing buckets:', listError);
-      return { success: false, error: listError };
-    }
-
-    console.log('Available buckets:', buckets);
-
-    // Check if contacts bucket exists
-    const contactsBucket = buckets?.find(b => b.name === 'contacts');
-    if (!contactsBucket) {
-      return { 
-        success: false, 
-        error: 'Contacts bucket not found. Please ensure it exists in your Supabase dashboard.' 
-      };
+    if (error) {
+      console.error('Error accessing contacts bucket:', error);
+      return { success: false, error };
     }
 
     return { success: true };
@@ -49,4 +46,5 @@ export type Contact = {
   intimacy: 'Close Contact' | 'Regular Contact' | 'Potential Contact';
   image_url?: string;
   created_at: string;
+  notes?: string;
 }; 
